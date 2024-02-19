@@ -84,6 +84,7 @@ jobs:
       - name: 更新feeds中描述内容
         run: |
           cd openwrt && ./scripts/feeds update -a
+          cd ..
           chmod +x $MOD_PART2_SH
           cd openwrt
           $GITHUB_WORKSPACE/$MOD_PART2_SH
