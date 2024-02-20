@@ -1,6 +1,6 @@
-# **CMCC RAX3000M OpenWrt Firmware** [Please Star⚝ ↗]
+# **CMCC RAX3000M <u>_NAND_</u> OpenWrt Firmware** [Please Star⚝ ↗]
 
-CMCC RAX3000M OpenWrt Firmware, compile by Github Actions  
+CMCC RAX3000M <u>_NAND_</u> OpenWrt Firmware, compile by Github Actions  
 [![LICENSE](https://img.shields.io/badge/license-apache--2.0-green.svg?style=flat-square&label=LICENSE)](https://github.com/yangxu52/CMCC-RAX3000M-OpenWrt-Firmware/blob/main/LICENSE)&nbsp;
 ![GitHub Stars](https://img.shields.io/github/stars/yangxu52/CMCC-RAX3000M-OpenWrt-Firmware.svg?style=flat-square&label=Stars&logo=github)&nbsp;
 ![GitHub Forks](https://img.shields.io/github/forks/yangxu52/CMCC-RAX3000M-OpenWrt-Firmware.svg?style=flat-square&label=Forks&logo=github)
