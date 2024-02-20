@@ -44,7 +44,7 @@ jobs:
 
     steps:
       - name: 签出工作区
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
 
       - name: 初始化编译环境
         env:
@@ -71,7 +71,7 @@ jobs:
         uses: stupidloud/cachewrtbuild@main
         with:
           ccache: 'true'
-          mixkey: 'bcm53'
+          mixkey: 'mt7981'
           prefix: ${{ github.workspace }}/openwrt
 
       - name: 加载自定义feeds文件
@@ -128,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@main
         if: steps.compile.outputs.STATUS == 'success' && env.UPLOAD_BIN_DIR == 'true'
         with:
-          name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          name: Immortalwrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: openwrt/bin
 
       - name: 整理文件
@@ -137,6 +137,7 @@ jobs:
         run: |
           cd openwrt/bin/targets/*/*
           rm -rf packages
+          find . -type f ! -name "*.bin" -exec rm {} +
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
           echo "STATUS=success" >> "$GITHUB_OUTPUT"
 
@@ -144,14 +145,14 @@ jobs:
         uses: actions/upload-artifact@main
         if: steps.organize.outputs.STATUS == 'success' && !cancelled()
         with:
-          name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          name: Immortalwrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: ${{ env.FIRMWARE }}
 
       - name: 生成Release标识
         id: tag
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         run: |
-          echo "release_tag=K3-lede-$(date +"%Y.%m.%d-%H%M")" >> "$GITHUB_OUTPUT"
+          echo "release_tag=Hanwckf_Immortalwrt_$(date +"%Y%m%d%H%M")" >> "$GITHUB_OUTPUT"
           touch release.txt
           echo "STATUS=success" >> "$GITHUB_OUTPUT"
 
