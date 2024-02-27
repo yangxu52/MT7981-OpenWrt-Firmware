@@ -32,5 +32,5 @@ echo '=========Replace luci theme argon OK!========='
 
 echo '替换golang'
 rm -rf feeds/packages/lang/golang
-git clone -b 21.x --single-branch https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
+git clone -b 22.x --single-branch https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
 echo '=========Replace golang OK!========='
