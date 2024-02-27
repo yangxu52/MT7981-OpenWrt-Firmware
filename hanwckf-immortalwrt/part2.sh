@@ -35,9 +35,9 @@ echo '修改Passwall检测规则'
 sed -i 's/socket" "iptables-mod-//g' feeds/luci/applications/luci-app-passwall/root/usr/share/passwall/app.sh
 echo '=========ALTER passwall denpendcies check OK!========='
 
-echo '开启sing-box的CGO标记'
-sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' feeds/passwall/sing-box/Makefile
-echo '=========Enable sing-box CGO FLAG OK !========='
+# echo '开启sing-box的CGO标记'
+# sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' feeds/passwall/sing-box/Makefile
+# echo '=========Enable sing-box CGO FLAG OK !========='
 
 
 
