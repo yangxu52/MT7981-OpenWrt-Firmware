@@ -14,7 +14,7 @@
 #limitations under the License.
 #
 
-name: cmcc-rax3000m_hanwckf-immortalwrt
+name: h3c-nx30pro_hanwckf-immortalwrt
 
 on:
   workflow_dispatch:
@@ -22,11 +22,11 @@ on:
 env:
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
-  FEEDS_CONF_FILE: cmcc-rax3000m/hanwckf-immortalwrt/feeds.conf.default
-  CONFIG_FILE: cmcc-rax3000m/hanwckf-immortalwrt/.config
-  MOD_PART1_SH: cmcc-rax3000m/hanwckf-immortalwrt/part1.sh
-  MOD_PART2_SH: cmcc-rax3000m/hanwckf-immortalwrt/part2.sh
-  MOD_PART3_SH: cmcc-rax3000m/hanwckf-immortalwrt/part3.sh
+  FEEDS_CONF_FILE: h3c-nx30pro/hanwckf-immortalwrt/feeds.conf.default
+  CONFIG_FILE: h3c-nx30pro/hanwckf-immortalwrt/.config
+  MOD_PART1_SH: h3c-nx30pro/hanwckf-immortalwrt/part1.sh
+  MOD_PART2_SH: h3c-nx30pro/hanwckf-immortalwrt/part2.sh
+  MOD_PART3_SH: h3c-nx30pro/hanwckf-immortalwrt/part3.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -147,12 +147,11 @@ jobs:
         with:
           name: Immortalwrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: ${{ env.FIRMWARE }}
-
       - name: 生成Release标识
         id: tag
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         run: |
-          echo "release_tag=cmcc_rax300m-Hanwckf_Immortalwrt-$(date +"%Y%m%d_%H%M")" >> "$GITHUB_OUTPUT"
+          echo "release_tag=h3c_nx30pro-Hanwckf_Immortalwrt-$(date +"%Y%m%d_%H%M")" >> "$GITHUB_OUTPUT"
           touch release.txt
           echo "STATUS=success" >> "$GITHUB_OUTPUT"
 
