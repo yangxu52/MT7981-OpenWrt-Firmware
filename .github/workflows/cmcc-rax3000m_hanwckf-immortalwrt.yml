@@ -14,7 +14,7 @@
 #limitations under the License.
 #
 
-name: hanwckf-immortalwrt
+name: cmcc-rax3000m_hanwckf-immortalwrt
 
 on:
   workflow_dispatch:
@@ -22,11 +22,11 @@ on:
 env:
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
-  FEEDS_CONF_FILE: hanwckf-immortalwrt/feeds.conf.default
-  CONFIG_FILE: hanwckf-immortalwrt/.config
-  MOD_PART1_SH: hanwckf-immortalwrt/part1.sh
-  MOD_PART2_SH: hanwckf-immortalwrt/part2.sh
-  MOD_PART3_SH: hanwckf-immortalwrt/part3.sh
+  FEEDS_CONF_FILE: cmcc-rax3000m/hanwckf-immortalwrt/feeds.conf.default
+  CONFIG_FILE: cmcc-rax3000m/hanwckf-immortalwrt/.config
+  MOD_PART1_SH: cmcc-rax3000m/hanwckf-immortalwrt/part1.sh
+  MOD_PART2_SH: cmcc-rax3000m/hanwckf-immortalwrt/part2.sh
+  MOD_PART3_SH: cmcc-rax3000m/hanwckf-immortalwrt/part3.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
