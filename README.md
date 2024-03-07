@@ -1,6 +1,6 @@
-# **CMCC RAX3000M <u>_NAND_</u> OpenWrt Firmware** [Please Star⚝ ↗]
+# **MT7981 OpenWrt Firmware** [Please Star⚝ ↗]
 
-CMCC RAX3000M <u>_NAND_</u> OpenWrt Firmware, compile by Github Actions  
+MT7981 OpenWrt Firmware, compile by Github Actions  
 [![LICENSE](https://img.shields.io/badge/license-apache--2.0-green.svg?style=flat-square&label=LICENSE)](https://github.com/yangxu52/CMCC-RAX3000M-OpenWrt-Firmware/blob/main/LICENSE)&nbsp;
 ![GitHub Stars](https://img.shields.io/github/stars/yangxu52/CMCC-RAX3000M-OpenWrt-Firmware.svg?style=flat-square&label=Stars&logo=github)&nbsp;
 ![GitHub Forks](https://img.shields.io/github/forks/yangxu52/CMCC-RAX3000M-OpenWrt-Firmware.svg?style=flat-square&label=Forks&logo=github)
@@ -28,18 +28,15 @@ CMCC RAX3000M <u>_NAND_</u> OpenWrt Firmware, compile by Github Actions
 
 - **Add IPv6 full support**
 
-- **Add UPNP & DDNS support**
+- **Add UPNP support**
 
 - **Add KMS Server**
 
 - **Add Syncdial & mwan3**  
   Support multi-wan access and load balancing,suport PPPoE and others.
 
-- **Add ~~Passwall~~** proxy  
-  Only include Xray-core, so only support vmess,vless and trojan protocol.
-
-- **Add WechatPush**  
-  Send a router status through the WeChat.
+- **Add ~~Passwall~~**  
+  include xray-core, sing-box.
 
 - **Others**  
   &emsp;
@@ -48,7 +45,7 @@ CMCC RAX3000M <u>_NAND_</u> OpenWrt Firmware, compile by Github Actions
 
 ### **2.1 Language | 语言**
 
-1. Open [Web Admin](http://192.168.1.1) (default: 192.168.1.1) in your browser and login (default: `root` `password`).
+1. Open [Web Admin](http://192.168.7.1) (default: 192.168.7.1) in your browser and login (default: `root` `password`).
 2. Open Menu `(系统|System)` -> `(系统|System)`, swith tab `(语言和界面|Language and Style)`
 3. Change the `Language` select's option. (auto=English)
 4. Click the `(保存&应用|SAVE&APPLY)` button to save. Finally,refresh browser.  
