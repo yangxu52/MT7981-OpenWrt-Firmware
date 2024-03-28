@@ -14,6 +14,10 @@
 #See the License for the specific language governing permissions and
 #limitations under the License.
 
+echo '链接luci-app-passwall2'
+ln -sr feeds/luci/applications/luci-app-passwall2 package/feeds/luci/luci-app-passwall2
+echo '=========Link luci-app-passwall2!========='
+
 echo '修改主机名'
 sed -i "s/hostname='ImmortalWrt'/hostname='NX30-Pro'/g" package/base-files/files/bin/config_generate
 cat package/base-files/files/bin/config_generate |grep hostname=
