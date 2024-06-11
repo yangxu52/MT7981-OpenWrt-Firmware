@@ -1,0 +1,202 @@
+#
+#Copyright 2021-2024 yangxu52<https://github.com/yangxu52>
+#
+#Licensed under the Apache License, Version 2.0 (the "License");
+#you may not use this file except in compliance with the License.
+#You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#Unless required by applicable law or agreed to in writing, software
+#distributed under the License is distributed on an "AS IS" BASIS,
+#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#See the License for the specific language governing permissions and
+#limitations under the License.
+#
+
+name: h3c-nx30pro_benboguan-immortalwrt
+
+on:
+  workflow_dispatch:
+
+env:
+  REPO_URL: https://github.com/benboguan/immortalwrt-mt798x
+  REPO_BRANCH: mt798x-scripts
+  FEEDS_CONF_FILE: h3c-nx30pro/benboguan-immortalwrt/feeds.conf.default
+  CONFIG_FILE: h3c-nx30pro/benboguan-immortalwrt/.config
+  MOD_PART1_SH: h3c-nx30pro/benboguan-immortalwrt/part1.sh
+  MOD_PART2_SH: h3c-nx30pro/benboguan-immortalwrt/part2.sh
+  MOD_PART3_SH: h3c-nx30pro/benboguan-immortalwrt/part3.sh
+  UPLOAD_BIN_DIR: false
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: true
+  TIME_ZONE: Asia/Shanghai
+  COMPILE_DEPENDS: ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential
+    bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib
+    git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev
+    libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev
+    libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python2.7 python3
+    python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo
+    uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+jobs:
+  build:
+    name: 编译H3C NX30Pro固件
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: 清理磁盘空间 (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: 签出
+        uses: actions/checkout@v4
+
+      - name: 初始化编译环境
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo rm -rf /etc/apt/sources.list.d/*
+          sudo -E apt-get -qq update
+          sudo -E apt-get -qq full-upgrade -y
+          sudo -E apt-get -qq install -y $COMPILE_DEPENDS
+          sudo -E apt-get -qq --purge autoremove
+          sudo -E apt-get -qq autoclean
+          sudo timedatectl set-timezone "$TIME_ZONE"
+          sudo mkdir -p /workdir
+          sudo chown $USER:$GROUPS /workdir
+
+      - name: 拉取源代码
+        working-directory: /workdir
+        run: |
+          df -hT $PWD
+          git clone -b $REPO_BRANCH --single-branch $REPO_URL openwrt
+          ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+
+      - name: 尝试获取缓存
+        uses: stupidloud/cachewrtbuild@main
+        with:
+          ccache: 'true'
+          mixkey: 'mt7981'
+          prefix: ${{ github.workspace }}/openwrt
+
+      - name: 加载自定义feeds文件并执行Part1
+        run: |
+          [ -e $FEEDS_CONF_FILE ] && mv $FEEDS_CONF_FILE openwrt/feeds.conf.default
+          chmod +x $MOD_PART1_SH
+          cd openwrt
+          $GITHUB_WORKSPACE/$MOD_PART1_SH
+
+      - name: 更新feeds并执行Part2
+        run: |
+          cd openwrt && ./scripts/feeds update -a
+          cd ..
+          chmod +x $MOD_PART2_SH
+          cd openwrt
+          $GITHUB_WORKSPACE/$MOD_PART2_SH
+
+      - name: 安装feeds并执行Part3
+        run: |
+          cd openwrt && ./scripts/feeds install -a
+          cd ..
+          chmod +x $MOD_PART3_SH
+          cd openwrt
+          $GITHUB_WORKSPACE/$MOD_PART3_SH
+
+      - name: 加载自定义.config文件
+        run: |
+          [ -e files ] && mv files openwrt/files
+          [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+
+      - name: 下载编译依赖文件
+        id: package
+        run: |
+          cd openwrt
+          make defconfig
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: 编译固件
+        id: compile
+        run: |
+          cd openwrt
+          echo -e "$(nproc) thread compile"
+          make -j$(nproc) || make -j1 || make -j1 V=s
+          echo "STATUS=success" >> "$GITHUB_OUTPUT"
+          grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
+          [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
+          echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+      - name: 检查磁盘空间
+        if: (!cancelled())
+        run: df -hT
+
+      - name: 上传bin目录
+        uses: actions/upload-artifact@main
+        if: steps.compile.outputs.STATUS == 'success' && env.UPLOAD_BIN_DIR == 'true'
+        with:
+          name: Immortalwrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          path: openwrt/bin
+
+      - name: 整理文件
+        id: organize
+        if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+        run: |
+          cd openwrt/bin/targets/*/*
+          rm -rf packages
+          find . -type f ! -name "*.bin" -exec rm {} +
+          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+          echo "STATUS=success" >> "$GITHUB_OUTPUT"
+
+      - name: 上传固件目录
+        uses: actions/upload-artifact@main
+        if: steps.organize.outputs.STATUS == 'success' && !cancelled()
+        with:
+          name: Immortalwrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+          path: ${{ env.FIRMWARE }}
+
+      - name: 生成Release标签
+        id: tag
+        if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+        run: |
+          echo "release_tag=h3c_nx30pro-Benboguan_Immortalwrt-$(date +"%Y%m%d_%H%M")" >> "$GITHUB_OUTPUT"
+          touch release.txt
+          echo "STATUS=success" >> "$GITHUB_OUTPUT"
+
+      - name: 发布到Release
+        uses: softprops/action-gh-release@v2
+        if: steps.tag.outputs.STATUS == 'success' && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          body_path: release.txt
+          files: ${{ env.FIRMWARE }}/*
+
+      - name: 移除过时Release
+        uses: dev-drprasad/delete-older-releases@master
+        if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          keep_latest: 7
+          delete_tags: true
+
+      - name: 清理过时工作流
+        uses: Mattraks/delete-workflow-runs@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 1
+          keep_minimum_runs: 3
