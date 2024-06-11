@@ -40,22 +40,38 @@ env:
     uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
 jobs:
   build:
+    name: 编译H3C NX30Pro固件
     runs-on: ubuntu-20.04
 
     steps:
-      - name: 签出工作区
+      - name: 清理磁盘空间 (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: 签出
         uses: actions/checkout@v4
 
       - name: 初始化编译环境
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          sudo -E apt -qq update
-          sudo -E apt -qq full-upgrade -y
-          sudo -E apt -qq install -y $COMPILE_DEPENDS
-          sudo -E apt -qq autoremove --purge
-          sudo -E apt -qq clean
+          sudo rm -rf /etc/apt/sources.list.d/*
+          sudo -E apt-get -qq update
+          sudo -E apt-get -qq full-upgrade -y
+          sudo -E apt-get -qq install -y $COMPILE_DEPENDS
+          sudo -E apt-get -qq --purge autoremove
+          sudo -E apt-get -qq autoclean
           sudo timedatectl set-timezone "$TIME_ZONE"
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
@@ -74,14 +90,14 @@ jobs:
           mixkey: 'mt7981'
           prefix: ${{ github.workspace }}/openwrt
 
-      - name: 加载自定义feeds文件
+      - name: 加载自定义feeds文件并执行Part1
         run: |
           [ -e $FEEDS_CONF_FILE ] && mv $FEEDS_CONF_FILE openwrt/feeds.conf.default
           chmod +x $MOD_PART1_SH
           cd openwrt
           $GITHUB_WORKSPACE/$MOD_PART1_SH
 
-      - name: 更新feeds中描述内容
+      - name: 更新feeds并执行Part2
         run: |
           cd openwrt && ./scripts/feeds update -a
           cd ..
@@ -89,18 +105,20 @@ jobs:
           cd openwrt
           $GITHUB_WORKSPACE/$MOD_PART2_SH
 
-      - name: 安装feeds中描述内容
-        run: cd openwrt && ./scripts/feeds install -a
-
-      - name: 加载自定义编译配置文件
+      - name: 安装feeds并执行Part3
         run: |
-          [ -e files ] && mv files openwrt/files
-          [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+          cd openwrt && ./scripts/feeds install -a
+          cd ..
           chmod +x $MOD_PART3_SH
           cd openwrt
           $GITHUB_WORKSPACE/$MOD_PART3_SH
 
-      - name: 下载编译所需依赖文件
+      - name: 加载自定义.config文件
+        run: |
+          [ -e files ] && mv files openwrt/files
+          [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+
+      - name: 下载编译依赖文件
         id: package
         run: |
           cd openwrt
@@ -120,7 +138,7 @@ jobs:
           [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
           echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
-      - name: 核对空间占用
+      - name: 检查磁盘空间
         if: (!cancelled())
         run: df -hT
 
@@ -147,7 +165,8 @@ jobs:
         with:
           name: Immortalwrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
           path: ${{ env.FIRMWARE }}
-      - name: 生成Release标识
+
+      - name: 生成Release标签
         id: tag
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         run: |
@@ -156,7 +175,7 @@ jobs:
           echo "STATUS=success" >> "$GITHUB_OUTPUT"
 
       - name: 发布到Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: steps.tag.outputs.STATUS == 'success' && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -165,17 +184,19 @@ jobs:
           body_path: release.txt
           files: ${{ env.FIRMWARE }}/*
 
-      - name: 清理工作空间
-        uses: GitRML/delete-workflow-runs@main
-        with:
-          retain_days: 1
-          keep_minimum_runs: 3
-
-      - name: 移除旧的Realeases
-        uses: dev-drprasad/delete-older-releases@v0.3.2
+      - name: 移除过时Release
+        uses: dev-drprasad/delete-older-releases@master
         if: env.UPLOAD_RELEASE == 'true' && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          keep_latest: 5
+          keep_latest: 7
           delete_tags: true
+
+      - name: 清理过时工作流
+        uses: Mattraks/delete-workflow-runs@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 1
+          keep_minimum_runs: 3
