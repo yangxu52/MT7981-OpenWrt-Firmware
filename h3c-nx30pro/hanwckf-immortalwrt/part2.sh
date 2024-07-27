@@ -19,13 +19,6 @@ rm -rf feeds/luci/themes/luci-theme-argon
 git clone -b master --single-branch https://github.com/jerrykuku/luci-theme-argon feeds/luci/themes/luci-theme-argon
 echo '=========Replace luci theme argon OK!========='
 
-echo '替换unblockneteasemusic软件'
-rm -rf feeds/luci/applications/luci-app-unblockneteasemusic/*
-git clone -b js --single-branch https://github.com/UnblockNeteaseMusic/luci-app-unblockneteasemusic unblockneteasemusic
-mv unblockneteasemusic/* feeds/luci/applications/luci-app-unblockneteasemusic/
-rm -rf unblockneteasemusic
-echo '=========Replace unblockneteasemusic source OK!========='
-
 echo '替换golang到1.22.x'
 rm -rf feeds/packages/lang/golang
 git clone -b 22.x --single-branch https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
