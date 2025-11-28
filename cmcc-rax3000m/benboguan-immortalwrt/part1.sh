@@ -19,5 +19,5 @@ sed -i '1 i src-git-full passwall https://github.com/xiaorouji/openwrt-passwall-
 echo '=========Add passwall feeds source OK!========='
 
 echo '移除RAM3000的USB依赖'
-sed -i '447d' target/linux/mediatek/image/mt7981.mk
+sed -i '662d' target/linux/mediatek/image/mt7981.mk
 echo '=========Remove usb ram3000 OK!========='
