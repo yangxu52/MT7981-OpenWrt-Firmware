@@ -26,7 +26,7 @@ echo '=========Replace golang OK!========='
 
 echo '替换Passwall软件'
 rm -rf feeds/luci/applications/luci-app-passwall/*
-git clone -b main --single-branch https://github.com/xiaorouji/openwrt-passwall passwall
+git clone -b main --single-branch https://github.com/Openwrt-Passwall/openwrt-passwall passwall
 mv passwall/luci-app-passwall/* feeds/luci/applications/luci-app-passwall/
 rm -rf passwall
 echo '=========Replace passwall source OK!========='
@@ -34,7 +34,7 @@ echo '=========Replace passwall source OK!========='
 echo '添加Passwall2软件'
 # rm -rf feeds/luci/applications/luci-app-passwall2
 mkdir feeds/luci/applications/luci-app-passwall2
-git clone -b main --single-branch https://github.com/xiaorouji/openwrt-passwall2 passwall2
+git clone -b main --single-branch https://github.com/Openwrt-Passwall/openwrt-passwall2 passwall2
 mv passwall2/luci-app-passwall2/* feeds/luci/applications/luci-app-passwall2/
 rm -rf passwall2
 echo '=========Replace passwall source OK!========='
