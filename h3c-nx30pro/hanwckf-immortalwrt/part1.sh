@@ -15,5 +15,6 @@
 #limitations under the License.
 
 echo '添加Passwall依赖feeds'
-sed -i '1 i src-git-full passwall https://github.com/Openwrt-Passwall/openwrt-passwall-packages;main' feeds.conf.default
+sed -i '1 i src-git passwall_luci https://github.com/Openwrt-Passwall/openwrt-passwall.git;main' feeds.conf.default
+sed -i '1 i src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main' feeds.conf.default
 echo '=========Add passwall feeds source OK!========='
