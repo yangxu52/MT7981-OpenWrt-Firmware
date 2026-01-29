@@ -14,15 +14,20 @@
 #See the License for the specific language governing permissions and
 #limitations under the License.
 
+echo '替换golang到1.24.x'
+rm -rf feeds/packages/lang/golang
+git clone -b 24.x --single-branch https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
+echo '=========Replace golang OK!========='
+
 echo '替换jerrykuku的luci argon主题'
 rm -rf feeds/luci/themes/luci-theme-argon
 git clone -b v2.4.3 --single-branch https://github.com/jerrykuku/luci-theme-argon feeds/luci/themes/luci-theme-argon
 echo '=========Replace luci theme argon OK!========='
 
-echo '替换golang到1.24.x'
-rm -rf feeds/packages/lang/golang
-git clone -b 24.x --single-branch https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
-echo '=========Replace golang OK!========='
+echo '替换mosdns到最新'
+rm -rf package/mosdns-luci
+git clone -b v5 --single-branch https://github.com/sbwml/luci-app-mosdns package/mosdns-luci
+echo '=========Replace smartdns OK!========='
 
 # echo '替换Passwall软件'
 # rm -rf feeds/luci/applications/luci-app-passwall/*
