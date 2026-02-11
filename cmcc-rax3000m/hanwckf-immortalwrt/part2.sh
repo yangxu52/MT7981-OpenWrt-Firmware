@@ -44,10 +44,10 @@ echo '=========Replace smartdns OK!========='
 # rm -rf passwall2
 # echo '=========Replace passwall source OK!========='
 
-# echo '修改Passwall检测规则'
-# sed -i 's/socket" "iptables-mod-//g' feeds/luci/applications/luci-app-passwall/root/usr/share/passwall/app.sh
-# echo '=========ALTER passwall denpendcies check OK!========='
+echo '修改Passwall检测规则'
+sed -i 's/-socket iptables-mod-/-/g' feeds/luci/applications/luci-app-passwall/root/usr/share/passwall/app.sh
+echo '=========ALTER passwall denpendcies check OK!========='
 
 # echo '修改Passwall2检测规则'
-# sed -i 's/socket" "iptables-mod-//g' feeds/luci/applications/luci-app-passwall2/root/usr/share/passwall2/app.sh
+# sed -i 's/-socket iptables-mod-/-/g' feeds/luci/applications/luci-app-passwall2/root/usr/share/passwall2/app.sh
 # echo '=========ALTER passwall denpendcies check OK!========='
