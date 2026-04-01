@@ -1,0 +1,161 @@
+name: Build OpenWrt Firmware
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Device profile
+        required: true
+        type: choice
+        options:
+          - h3c-nx30pro
+          - cmcc-rax3000m
+
+      upload_artifact:
+        description: Upload firmware artifact
+        required: true
+        type: boolean
+        default: true
+
+      create_release:
+        description: Create GitHub release
+        required: true
+        type: boolean
+        default: false
+
+env:
+  REPO_URL: https://github.com/yangxu52/immortalwrt-mt798x
+  REPO_BRANCH: openwrt-21.02
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    name: Build ${{ inputs.profile }}
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load profile
+        shell: bash
+        run: |
+          bash scripts/ci/env.sh load-profile "${{ inputs.profile }}"
+
+      - name: Show disk usage before cleanup
+        run: df -hT
+
+      - name: Cleanup runner
+        shell: bash
+        run: |
+          bash scripts/ci/cleanup.sh runner
+
+      - name: Show disk usage after cleanup
+        run: df -hT
+
+      - name: Restore dl cache
+        uses: actions/cache@v4
+        with:
+          path: /workdir/openwrt/dl
+          key: ${{ runner.os }}-dl-${{ env.REPO_BRANCH }}
+          restore-keys: |
+            ${{ runner.os }}-dl-
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: /workdir/.ccache
+          key: ${{ runner.os }}-ccache-${{ env.REPO_BRANCH }}-${{ env.CACHE_NAME }}-${{ hashFiles(format('profiles/{0}/.config', inputs.profile)) }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-${{ env.REPO_BRANCH }}-${{ env.CACHE_NAME }}-
+            ${{ runner.os }}-ccache-${{ env.REPO_BRANCH }}-
+
+      - name: Restore cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /workdir/.cargo/registry
+            /workdir/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ env.REPO_BRANCH }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Initialize build environment
+        shell: bash
+        run: |
+          bash scripts/ci/build.sh init
+
+      - name: Prepare source tree
+        shell: bash
+        run: |
+          bash scripts/ci/build.sh prepare-source
+
+      - name: Apply profile
+        shell: bash
+        run: |
+          bash scripts/ci/build.sh apply-profile
+
+      - name: Download dependencies
+        shell: bash
+        run: |
+          bash scripts/ci/build.sh download
+
+      - name: Compile firmware
+        shell: bash
+        run: |
+          bash scripts/ci/build.sh compile
+
+      - name: Show disk usage after compile
+        if: ${{ !cancelled() }}
+        run: df -hT
+
+      - name: Collect artifacts
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          bash scripts/ci/collect.sh
+
+      - name: Upload firmware artifact
+        if: ${{ success() && inputs.upload_artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.FIRMWARE_DIR }}
+
+      - name: Prepare release metadata
+        if: ${{ success() && inputs.create_release }}
+        shell: bash
+        run: |
+          bash scripts/ci/build.sh prepare-release
+
+      - name: Publish release
+        if: ${{ success() && inputs.create_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_NAME }}
+          body_path: ${{ env.RELEASE_BODY }}
+          files: ${{ env.FIRMWARE_DIR }}/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete old releases
+        if: ${{ success() && inputs.create_release }}
+        uses: dev-drprasad/delete-older-releases@master
+        with:
+          keep_latest: 7
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete old workflow runs
+        if: ${{ !cancelled() }}
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 1
+          keep_minimum_runs: 3
