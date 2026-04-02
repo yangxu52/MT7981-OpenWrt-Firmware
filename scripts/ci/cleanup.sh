@@ -18,7 +18,7 @@ cleanup_runner() {
   sudo swapoff -a || true
   sudo rm -f /swapfile || true
 
-  docker image prune -af || true
+  sudo docker image prune -af || true
 }
 
 case "${1:-}" in

@@ -8,18 +8,17 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 # shellcheck source=scripts/ci/lib.sh
 source "${SCRIPT_DIR}/lib.sh"
 
-OPENWRT_ROOT="/workdir/openwrt"
-CCACHE_DIR="/workdir/.ccache"
-CARGO_HOME="/workdir/.cargo"
+OPENWRT_ROOT="${GITHUB_WORKSPACE}/openwrt"
+CCACHE_DIR="${OPENWRT_ROOT}/.ccache"
 
 COMPILE_DEPENDS=(
   ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential
   bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext
   gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386
   libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev
-  libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev
-  libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch
-  pkgconf python2.7 python3 python3-pyelftools python3-setuptools qemu-utils
+  libmpfr-dev libncurses-dev libpython3-dev libreadline-dev
+  libssl-dev libtool lrzsz genisoimage msmtp ninja-build 7zip patch
+  pkgconf python3 python3-pyelftools python3-setuptools qemu-utils
   rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim
   wget xmlto xxd zlib1g-dev
 )
@@ -27,7 +26,9 @@ COMPILE_DEPENDS=(
 init() {
   group_start "Initialize build environment"
 
-  sudo rm -rf /etc/apt/sources.list.d/* || true
+  export DEBIAN_FRONTEND=noninteractive
+
+  sudo find /etc/apt/sources.list.d -mindepth 1 ! -name 'ubuntu.sources' -exec rm -rf {} +
   sudo -E apt-get -qq update
   sudo -E apt-get -qq install -y "${COMPILE_DEPENDS[@]}"
   sudo -E apt-get -qq --purge autoremove
@@ -35,15 +36,13 @@ init() {
 
   sudo timedatectl set-timezone "${TZ:-Asia/Shanghai}"
 
-  sudo mkdir -p /workdir
-  sudo chown -R "$USER:$USER" /workdir
+  mkdir -p "$OPENWRT_ROOT"
 
-  mkdir -p "$CCACHE_DIR" "$CARGO_HOME"
+  export CCACHE_DIR="$CCACHE_DIR"
+  export PATH="/usr/lib/ccache:$PATH"
 
-  {
-    echo "CCACHE_DIR=$CCACHE_DIR"
-    echo "CARGO_HOME=$CARGO_HOME"
-  } >> "$GITHUB_ENV"
+  echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+  echo "/usr/lib/ccache" >> "$GITHUB_PATH"
 
   group_end
 }
@@ -55,13 +54,15 @@ prepare_source() {
 
   group_start "Clone source"
 
-  if [[ ! -d "$OPENWRT_ROOT/.git" ]]; then
-    git clone -b "$REPO_BRANCH" --single-branch "$REPO_URL" "$OPENWRT_ROOT"
-  else
+  if [[ -d "$OPENWRT_ROOT/.git" ]]; then
     log_info "Source already exists: $OPENWRT_ROOT"
+  elif [[ -d "$OPENWRT_ROOT" ]] && [[ -n "$(ls -A "$OPENWRT_ROOT" 2>/dev/null)" ]]; then
+    log_error "OpenWrt root exists but is not a git repository: $OPENWRT_ROOT"
+    exit 1
+  else
+    rm -rf "$OPENWRT_ROOT"
+    git clone -b "$REPO_BRANCH" --single-branch "$REPO_URL" "$OPENWRT_ROOT"
   fi
-
-  ln -sfn "$OPENWRT_ROOT" "${GITHUB_WORKSPACE}/openwrt"
 
   group_end
 
@@ -121,6 +122,8 @@ compile_fw() {
   cd "$OPENWRT_ROOT"
   echo -e "$(nproc) thread compile"
 
+  ccache -s || true
+
   if make -j"$(nproc)"; then
     log_info "Parallel build succeeded"
   elif make -j1; then
@@ -130,10 +133,10 @@ compile_fw() {
     make -j1 V=s
   fi
 
+  ccache -s || true
+
   local device_name=""
-  if grep '^CONFIG_TARGET.*DEVICE.*=y' .config > /tmp/device_name.tmp 2>/dev/null; then
-    device_name="$(sed -r 's/.*DEVICE_(.*)=y/\1/' /tmp/device_name.tmp | head -n1)"
-  fi
+  device_name="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config 2>/dev/null | sed -r 's/.*DEVICE_(.*)=y/\1/' | head -n1 || true)"
 
   local file_date
   file_date="$(timestamp_compact)"
@@ -158,7 +161,7 @@ prepare_release() {
   {
     echo "Profile: ${PROFILE_NAME}"
     echo "Profile ID: ${PROFILE_ID}"
-    echo "Branch: ${REPO_BRANCH}"
+    echo "Branch: ${REPO_BRANCH:-unknown}"
     echo "Build Time: ${FILE_DATE}"
     echo "Commit: ${GITHUB_SHA}"
     echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/ci/lib.sh
 source "${SCRIPT_DIR}/lib.sh"
 
-OPENWRT_ROOT="/workdir/openwrt"
+OPENWRT_ROOT="${GITHUB_WORKSPACE}/openwrt"
 
 resolve_firmware_dir() {
   local dir=""
