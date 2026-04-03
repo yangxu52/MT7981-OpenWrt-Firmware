@@ -54,6 +54,8 @@ jobs:
           df -hT
 
       - name: Initialize Build Environment
+        env: 
+          DEBIAN_FRONTEND: noninteractive
         shell: bash
         run: |
           bash scripts/ci/build.sh init

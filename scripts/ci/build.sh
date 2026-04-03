@@ -25,11 +25,11 @@ COMPILE_DEPENDS=(
 
 init() {
   group_start "Initialize build environment"
-
-  export DEBIAN_FRONTEND=noninteractive
-
+  
+  find /etc/apt/sources.list.d -mindepth 1
   sudo find /etc/apt/sources.list.d -mindepth 1 ! -name 'ubuntu.sources' -exec rm -rf {} +
   sudo -E apt-get -qq update
+  sudo -E apt-get -qq full-upgrade -y
   sudo -E apt-get -qq install -y "${COMPILE_DEPENDS[@]}"
   sudo -E apt-get -qq --purge autoremove
   sudo -E apt-get -qq autoclean
