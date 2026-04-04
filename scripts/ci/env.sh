@@ -22,13 +22,17 @@ load_profile() {
   source "$profile_env"
 
   : "${PROFILE_NAME:?PROFILE_NAME is required}"
-  : "${CACHE_NAME:?CACHE_NAME is required}"
+  : "${TARGET:?TARGET is required}"
+  : "${SUBTARGET:?SUBTARGET is required}"
+
+  local device="${DEVICE:-$profile_id}"
 
   append_env "PROFILE_DIR" "$profile_dir"
   append_env "PROFILE_ID" "$profile_id"
   append_env "PROFILE_NAME" "${PROFILE_NAME}"
-  append_env "CACHE_NAME" "${CACHE_NAME}"
-  append_env "TARGET_SUBDIR_HINT" "${TARGET_SUBDIR_HINT:-}"
+  append_env "DEVICE" "${device}"
+  append_env "TARGET" "${TARGET}"
+  append_env "SUBTARGET" "${SUBTARGET}"
   append_env "MODIFY_HOSTNAME" "${MODIFY_HOSTNAME:-}"
   append_env "MODIFY_IP" "${MODIFY_IP:-}"
   append_env "MODIFY_ADDR_OFFSET" "${MODIFY_ADDR_OFFSET:-}"

@@ -9,11 +9,12 @@ source "${SCRIPT_DIR}/lib.sh"
 OPENWRT_ROOT="${GITHUB_WORKSPACE}/openwrt"
 
 resolve_firmware_dir() {
-  local dir=""
+  : "${TARGET:?TARGET is required}"
+  : "${SUBTARGET:?SUBTARGET is required}"
 
-  if [[ -n "${TARGET_SUBDIR_HINT:-}" && -d "${OPENWRT_ROOT}/bin/targets/${TARGET_SUBDIR_HINT}" ]]; then
-    dir="${OPENWRT_ROOT}/bin/targets/${TARGET_SUBDIR_HINT}"
-  else
+  local dir="${OPENWRT_ROOT}/bin/targets/${TARGET}/${SUBTARGET}"
+
+  if [[ ! -d "$dir" ]]; then
     dir="$(find "${OPENWRT_ROOT}/bin/targets" -mindepth 2 -maxdepth 2 -type d | head -n1)"
   fi
 

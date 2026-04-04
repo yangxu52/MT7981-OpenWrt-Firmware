@@ -43,7 +43,6 @@ jobs:
       - name: Load Profile
         shell: bash
         run: |
-          echo "PROFILE_ID=${{ inputs.profile }}" >> "$GITHUB_ENV"
           bash scripts/ci/env.sh load-profile "${{ inputs.profile }}"
 
       - name: Cleanup Runner
@@ -65,21 +64,42 @@ jobs:
         run: |
           bash scripts/ci/build.sh prepare-source
 
+      - name: Compute Cache Keys
+        shell: bash
+        run: |
+          bash scripts/ci/cache.sh compute-keys
+
+      - name: Restore Tools Host Cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            openwrt/build_dir/host
+            openwrt/staging_dir/host
+          key: tools-host-${{ env.TOOL_HEAD }}
+
       - name: Restore Toolchain Cache
         uses: actions/cache@v5
         with:
           path: |
-            openwrt/staging_dir/host*
-            openwrt/staging_dir/tool*
-          key: toolchain-${{ hashFiles('openwrt/tools/**', 'openwrt/toolchain/**') }}
+            openwrt/build_dir/toolchain-*
+            openwrt/staging_dir/toolchain-*
+          key: toolchain-${{ env.TARGET }}-${{ env.SUBTARGET }}-${{ env.TOOLCHAIN_HEAD }}
+
+      - name: Restore Hostpkg Cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            openwrt/build_dir/hostpkg
+            openwrt/staging_dir/hostpkg
+          key: hostpkg-lang-${{ env.LANG_HEAD }}
 
       - name: Restore Ccache
         uses: actions/cache@v5
         with:
           path: openwrt/.ccache
-          key: ccache-${{ env.CACHE_NAME }}-${{ hashFiles(format('profiles/{0}/.config', inputs.profile)) }}
+          key: ccache-${{ env.DEVICE }}-${{ env.CCACHE_HASH }}
           restore-keys: |
-            ccache-${{ env.CACHE_NAME }}-
+            ccache-${{ env.DEVICE }}-
             ccache-
 
       - name: Normalize Cache Directories
@@ -87,7 +107,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p openwrt/.ccache
-          find openwrt/staging_dir -type d -exec chmod u+rwx {} + 2>/dev/null || true
+          find openwrt/staging_dir openwrt/build_dir -type d -exec chmod u+rwx {} + 2>/dev/null || true
           ccache -M 2G || true
           ccache -s || true
 
