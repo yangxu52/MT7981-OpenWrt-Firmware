@@ -22,7 +22,7 @@ cleanup_runner() {
 }
 
 case "${1:-}" in
-  runner)
+  cleanup-runner)
     cleanup_runner
     ;;
   *)

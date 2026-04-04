@@ -26,11 +26,11 @@ resolve_firmware_dir() {
   echo "$dir"
 }
 
-collect() {
+collect_firmware() {
   : "${PROFILE_ID:?PROFILE_ID is required}"
   : "${FILE_DATE:?FILE_DATE is required}"
 
-  group_start "Collect firmware artifacts"
+  group_start "Artifacts: Collect Firmware"
 
   local firmware_dir
   firmware_dir="$(resolve_firmware_dir)"
@@ -61,4 +61,12 @@ collect() {
   group_end
 }
 
-collect
+case "${1:-}" in
+  collect-firmware)
+    collect_firmware
+    ;;
+  *)
+    log_error "Unknown command: ${1:-}"
+    exit 1
+    ;;
+esac

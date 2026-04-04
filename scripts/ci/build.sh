@@ -23,8 +23,8 @@ COMPILE_DEPENDS=(
   wget xmlto xxd zlib1g-dev
 )
 
-init() {
-  group_start "Initialize build environment"
+initialize_environment() {
+  group_start "Environment: Initialize"
   
   find /etc/apt/sources.list.d -mindepth 1
   sudo find /etc/apt/sources.list.d -mindepth 1 ! -name 'ubuntu.sources' -exec rm -rf {} +
@@ -48,11 +48,10 @@ init() {
 }
 
 prepare_source() {
-  : "${PROFILE_DIR:?PROFILE_DIR is required}"
   : "${REPO_URL:?REPO_URL is required}"
   : "${REPO_BRANCH:?REPO_BRANCH is required}"
 
-  group_start "Clone source"
+  group_start "Source: Prepare"
 
   if [[ -d "$OPENWRT_ROOT/.git" ]]; then
     log_info "Source already exists: $OPENWRT_ROOT"
@@ -65,8 +64,12 @@ prepare_source() {
   fi
 
   group_end
+}
 
-  group_start "Apply profile hooks and feeds"
+apply_source_customization() {
+  : "${PROFILE_DIR:?PROFILE_DIR is required}"
+
+  group_start "Source: Apply Customization"
 
   local feeds_file="${PROFILE_DIR}/feeds.conf.default"
   local common_hooks_dir="${REPO_ROOT}/profiles/common/scripts"
@@ -89,22 +92,14 @@ prepare_source() {
   run_if_exists "${common_hooks_dir}/post-feeds-install.sh"
   run_if_exists "${profile_hooks_dir}/post-feeds-install.sh"
 
-  group_end
-}
-
-apply_profile() {
-  : "${PROFILE_DIR:?PROFILE_DIR is required}"
-
-  group_start "Apply profile files"
-
   copy_dir_if_exists "${PROFILE_DIR}/files" "${OPENWRT_ROOT}/files"
   copy_file_if_exists "${PROFILE_DIR}/.config" "${OPENWRT_ROOT}/.config"
 
   group_end
 }
 
-download_deps() {
-  group_start "Download dependencies"
+download_sources() {
+  group_start "Build: Download Sources"
 
   cd "$OPENWRT_ROOT"
   make defconfig
@@ -116,15 +111,15 @@ download_deps() {
   group_end
 }
 
-set_compile_metadata() {
+set_build_metadata() {
   local file_date
   file_date="$(timestamp_compact)"
 
   append_env "FILE_DATE" "${file_date}"
 }
 
-compile_parallel() {
-  group_start "Compile firmware"
+build_firmware() {
+  group_start "Build: Firmware"
 
   cd "$OPENWRT_ROOT"
   log_info "Run parallel build with $(nproc) jobs"
@@ -133,13 +128,14 @@ compile_parallel() {
   make -j"$(nproc)"
   ccache -s || true
 
-  set_compile_metadata
+  set_build_metadata
+  df -hT
 
   group_end
 }
 
-compile_verbose() {
-  group_start "Compile firmware (verbose fallback)"
+build_firmware_verbose() {
+  group_start "Build: Firmware (Verbose Fallback)"
 
   cd "$OPENWRT_ROOT"
   log_warn "Parallel build failed, retry with single job and verbose logs"
@@ -148,17 +144,17 @@ compile_verbose() {
   make -j1 V=s
   ccache -s || true
 
-  set_compile_metadata
+  set_build_metadata
 
   group_end
 }
 
-prepare_release() {
+prepare_release_metadata() {
   : "${PROFILE_ID:?PROFILE_ID is required}"
   : "${PROFILE_NAME:?PROFILE_NAME is required}"
   : "${FILE_DATE:?FILE_DATE is required}"
 
-  group_start "Prepare release metadata"
+  group_start "Release: Prepare Metadata"
 
   local release_tag="${PROFILE_ID}-$(timestamp_tag)"
   local release_name="${PROFILE_NAME} ${FILE_DATE}"
@@ -181,26 +177,26 @@ prepare_release() {
 }
 
 case "${1:-}" in
-  init)
-    init
+  initialize-environment)
+    initialize_environment
     ;;
   prepare-source)
     prepare_source
     ;;
-  apply-profile)
-    apply_profile
+  apply-source-customization)
+    apply_source_customization
     ;;
-  download)
-    download_deps
+  download-sources)
+    download_sources
     ;;
-  compile)
-    compile_parallel
+  build-firmware)
+    build_firmware
     ;;
-  compile-verbose)
-    compile_verbose
+  build-firmware-verbose)
+    build_firmware_verbose
     ;;
-  prepare-release)
-    prepare_release
+  prepare-release-metadata)
+    prepare_release_metadata
     ;;
   *)
     log_error "Unknown command: ${1:-}"

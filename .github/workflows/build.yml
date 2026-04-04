@@ -37,39 +37,44 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout Repository
+      - name: "Source: Checkout"
         uses: actions/checkout@v6
 
-      - name: Load Profile
+      - name: "Profile: Load"
         shell: bash
         run: |
           bash scripts/ci/env.sh load-profile "${{ inputs.profile }}"
 
-      - name: Cleanup Runner
+      - name: "Runner: Cleanup"
         shell: bash
         run: |
           df -hT
-          bash scripts/ci/cleanup.sh runner
+          bash scripts/ci/cleanup.sh cleanup-runner
           df -hT
 
-      - name: Initialize Build Environment
+      - name: "Environment: Initialize"
         env: 
           DEBIAN_FRONTEND: noninteractive
         shell: bash
         run: |
-          bash scripts/ci/build.sh init
+          bash scripts/ci/build.sh initialize-environment
 
-      - name: Prepare Source Tree
+      - name: "Source: Prepare"
         shell: bash
         run: |
           bash scripts/ci/build.sh prepare-source
 
-      - name: Compute Cache Keys
+      - name: "Source: Apply Customization"
         shell: bash
         run: |
-          bash scripts/ci/cache.sh compute-keys
+          bash scripts/ci/build.sh apply-source-customization
 
-      - name: Restore Tools Host Cache
+      - name: "Cache: Compute Keys"
+        shell: bash
+        run: |
+          bash scripts/ci/cache.sh compute-cache-keys
+
+      - name: "Cache: Restore Tools Host"
         uses: actions/cache@v5
         with:
           path: |
@@ -77,7 +82,7 @@ jobs:
             openwrt/staging_dir/host
           key: tools-host-${{ env.TOOL_HEAD }}
 
-      - name: Restore Toolchain Cache
+      - name: "Cache: Restore Toolchain"
         uses: actions/cache@v5
         with:
           path: |
@@ -85,7 +90,7 @@ jobs:
             openwrt/staging_dir/toolchain-*
           key: toolchain-${{ env.TARGET }}-${{ env.SUBTARGET }}-${{ env.TOOLCHAIN_HEAD }}
 
-      - name: Restore Hostpkg Cache
+      - name: "Cache: Restore Hostpkg"
         uses: actions/cache@v5
         with:
           path: |
@@ -93,7 +98,7 @@ jobs:
             openwrt/staging_dir/hostpkg
           key: hostpkg-lang-${{ env.LANG_HEAD }}
 
-      - name: Restore Ccache
+      - name: "Cache: Restore Ccache"
         uses: actions/cache@v5
         with:
           path: openwrt/.ccache
@@ -102,7 +107,7 @@ jobs:
             ccache-${{ env.DEVICE }}-
             ccache-
 
-      - name: Normalize Cache Directories
+      - name: "Cache: Normalize Directories"
         if: ${{ !cancelled() }}
         shell: bash
         run: |
@@ -111,53 +116,44 @@ jobs:
           ccache -M 2G || true
           ccache -s || true
 
-      - name: Apply Profile
+      - name: "Build: Download Sources"
         shell: bash
         run: |
-          bash scripts/ci/build.sh apply-profile
+          bash scripts/ci/build.sh download-sources
 
-      - name: Download Dependencies
-        shell: bash
-        run: |
-          bash scripts/ci/build.sh download
-
-      - name: Compile Firmware
+      - name: "Build: Firmware"
         id: compile_firmware
         continue-on-error: true
         shell: bash
         run: |
-          bash scripts/ci/build.sh compile
+          bash scripts/ci/build.sh build-firmware
 
-      - name: Compile Firmware (Verbose Fallback)
+      - name: "Build: Firmware (Verbose Fallback)"
         if: ${{ steps.compile_firmware.outcome == 'failure' && !cancelled() }}
         shell: bash
         run: |
-          bash scripts/ci/build.sh compile-verbose
+          bash scripts/ci/build.sh build-firmware-verbose
 
-      - name: Show Disk Usage After Compile
-        if: ${{ !cancelled() }}
-        run: df -hT
-
-      - name: Collect Artifacts
+      - name: "Artifacts: Collect Firmware"
         if: ${{ success() }}
         shell: bash
         run: |
-          bash scripts/ci/collect.sh
+          bash scripts/ci/collect.sh collect-firmware
 
-      - name: Upload Firmware Artifact
+      - name: "Artifacts: Upload Firmware"
         if: ${{ success() && inputs.upload_artifact }}
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.FIRMWARE_DIR }}
 
-      - name: Prepare Release Metadata
+      - name: "Release: Prepare Metadata"
         if: ${{ success() && inputs.create_release }}
         shell: bash
         run: |
-          bash scripts/ci/build.sh prepare-release
+          bash scripts/ci/build.sh prepare-release-metadata
 
-      - name: Publish Release
+      - name: "Release: Publish"
         if: ${{ success() && inputs.create_release }}
         uses: softprops/action-gh-release@v2
         with:
@@ -168,7 +164,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete Old Releases
+      - name: "Maintenance: Prune Releases"
         if: ${{ success() && inputs.create_release }}
         uses: dev-drprasad/delete-older-releases@master
         with:
@@ -177,7 +173,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete Old Workflow Runs
+      - name: "Maintenance: Prune Workflow Runs"
         if: ${{ !cancelled() }}
         uses: Mattraks/delete-workflow-runs@v2
         with:

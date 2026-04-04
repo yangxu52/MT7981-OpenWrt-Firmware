@@ -9,7 +9,7 @@ source "${SCRIPT_DIR}/lib.sh"
 
 OPENWRT_ROOT="${GITHUB_WORKSPACE}/openwrt"
 
-compute_keys() {
+compute_cache_keys() {
   : "${PROFILE_DIR:?PROFILE_DIR is required}"
   : "${PROFILE_ID:?PROFILE_ID is required}"
   : "${TARGET:?TARGET is required}"
@@ -50,8 +50,8 @@ compute_keys() {
 }
 
 case "${1:-}" in
-  compute-keys)
-    compute_keys
+  compute-cache-keys)
+    compute_cache_keys
     ;;
   *)
     log_error "Unknown command: ${1:-}"
