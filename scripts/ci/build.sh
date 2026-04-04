@@ -116,33 +116,39 @@ download_deps() {
   group_end
 }
 
-compile_fw() {
-  group_start "Compile firmware"
-
-  cd "$OPENWRT_ROOT"
-  echo -e "$(nproc) thread compile"
-
-  ccache -s || true
-
-  if make -j"$(nproc)"; then
-    log_info "Parallel build succeeded"
-  elif make -j1; then
-    log_warn "Parallel build failed, single-job build succeeded"
-  else
-    log_warn "Single-job build failed, retry with verbose log"
-    make -j1 V=s
-  fi
-
-  ccache -s || true
-
-  local device_name=""
-  device_name="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config 2>/dev/null | sed -r 's/.*DEVICE_(.*)=y/\1/' | head -n1 || true)"
-
+set_compile_metadata() {
   local file_date
   file_date="$(timestamp_compact)"
 
-  append_env "DEVICE_NAME" "${device_name}"
   append_env "FILE_DATE" "${file_date}"
+}
+
+compile_parallel() {
+  group_start "Compile firmware"
+
+  cd "$OPENWRT_ROOT"
+  log_info "Run parallel build with $(nproc) jobs"
+
+  ccache -s || true
+  make -j"$(nproc)"
+  ccache -s || true
+
+  set_compile_metadata
+
+  group_end
+}
+
+compile_verbose() {
+  group_start "Compile firmware (verbose fallback)"
+
+  cd "$OPENWRT_ROOT"
+  log_warn "Parallel build failed, retry with single job and verbose logs"
+
+  ccache -s || true
+  make -j1 V=s
+  ccache -s || true
+
+  set_compile_metadata
 
   group_end
 }
@@ -188,7 +194,10 @@ case "${1:-}" in
     download_deps
     ;;
   compile)
-    compile_fw
+    compile_parallel
+    ;;
+  compile-verbose)
+    compile_verbose
     ;;
   prepare-release)
     prepare_release

@@ -122,16 +122,24 @@ jobs:
           bash scripts/ci/build.sh download
 
       - name: Compile Firmware
+        id: compile_firmware
+        continue-on-error: true
         shell: bash
         run: |
           bash scripts/ci/build.sh compile
+
+      - name: Compile Firmware (Verbose Fallback)
+        if: ${{ steps.compile_firmware.outcome == 'failure' && !cancelled() }}
+        shell: bash
+        run: |
+          bash scripts/ci/build.sh compile-verbose
 
       - name: Show Disk Usage After Compile
         if: ${{ !cancelled() }}
         run: df -hT
 
       - name: Collect Artifacts
-        if: ${{ !cancelled() }}
+        if: ${{ success() }}
         shell: bash
         run: |
           bash scripts/ci/collect.sh
