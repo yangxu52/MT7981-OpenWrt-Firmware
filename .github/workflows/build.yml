@@ -43,13 +43,13 @@ jobs:
       - name: "Profile: Load"
         shell: bash
         run: |
-          bash scripts/ci/env.sh load-profile "${{ inputs.profile }}"
+          bash scripts/ci/profile.sh load-profile "${{ inputs.profile }}"
 
       - name: "Runner: Cleanup"
         shell: bash
         run: |
           df -hT
-          bash scripts/ci/cleanup.sh cleanup-runner
+          bash scripts/ci/runner.sh cleanup-runner
           df -hT
 
       - name: "Environment: Initialize"
@@ -138,7 +138,7 @@ jobs:
         if: ${{ success() }}
         shell: bash
         run: |
-          bash scripts/ci/collect.sh collect-firmware
+          bash scripts/ci/artifacts.sh collect-firmware
 
       - name: "Artifacts: Upload Firmware"
         if: ${{ success() && inputs.upload_artifact }}
@@ -151,7 +151,7 @@ jobs:
         if: ${{ success() && inputs.create_release }}
         shell: bash
         run: |
-          bash scripts/ci/build.sh prepare-release-metadata
+          bash scripts/ci/release.sh prepare-release-metadata
 
       - name: "Release: Publish"
         if: ${{ success() && inputs.create_release }}
