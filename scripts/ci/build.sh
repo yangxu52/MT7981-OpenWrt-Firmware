@@ -34,6 +34,7 @@ initialize_environment() {
   sudo -E apt-get -qq --purge autoremove
   sudo -E apt-get -qq autoclean
 
+  echo "${TZ:-Asia/Shanghai}" | sudo tee /etc/timezone >/dev/null
   sudo timedatectl set-timezone "${TZ:-Asia/Shanghai}"
 
   mkdir -p "$OPENWRT_ROOT"
