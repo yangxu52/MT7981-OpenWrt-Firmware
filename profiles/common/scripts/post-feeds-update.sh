@@ -3,12 +3,12 @@ set -euo pipefail
 
 echo '>>> Replace Golang with 1.24.x >>>'
 rm -rf feeds/packages/lang/golang
-git clone -b 24.x --single-branch --depth 1 https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
+git clone -b 26.x --single-branch --depth 1 https://github.com/sbwml/packages_lang_golang feeds/packages/lang/golang
 echo '<<< Completed Replace Golang with 1.24.x <<<'
 
 echo '>>> Replace Rust with 1.94.x >>>'
 rm -rf feeds/packages/lang/rust
-git clone -b 1.94.x --single-branch --depth 1 https://github.com/yangxu52/openwrt-rust-backports feeds/packages/lang/rust
+git clone -b 1.95.x --single-branch --depth 1 https://github.com/yangxu52/openwrt-rust-backports feeds/packages/lang/rust
 ./scripts/feeds update -i packages
 echo '<<< Completed Replace Rust 1.94.x <<<'
 
